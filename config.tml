@@ -1,0 +1,47 @@
+cash_allocation = 0.8
+do_trade = true
+
+[alpaca]
+base_url = "https://paper-api.alpaca.markets"
+
+# For each portfolio entry, you'll want multiple tickers that track similar but different indexes
+[[portfolio]]
+category = "us-broad"
+tickers = ["VTI", "SCHB", "ITOT"]
+allocation = 0.34
+
+[[portfolio]]
+category = "intl-developed-large-cap"
+tickers = ["VEA", "SCHF", "IEFA"]
+allocation = 0.24
+
+[[portfolio]]
+category = "intl-emerging-markets"
+tickers = ["VWO", "IEMG", "SCHE"]
+allocation = 0.14
+
+[[portfolio]]
+category = "us-large-cap-value"
+tickers = ["VTV", "SCHV", "SPYV"]
+allocation = 0.08
+
+[[portfolio]]
+category = "us-mid-cap"
+tickers = ["VO", "SCHM"]
+allocation = 0.06
+
+[[portfolio]]
+category = "us-small-cap"
+tickers = ["VB", "SCHA"]
+allocation = 0.06
+
+[[portfolio]]
+category = "muni-bond"
+tickers = ["MUB", "TFI"]
+allocation = 0.05
+
+[[portfolio]]
+category = "intl-bond"
+tickers = ["BNDX"]
+allocation = 0.03
+
