@@ -1,9 +1,0 @@
-name: open-robo
-dependencies:
-- python=3.7
-- pip
-- jupyter
-- pandas
-- toml
-- pip:
-  - alpaca-trade-api
