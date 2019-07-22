@@ -7,13 +7,16 @@ browser.runtime.onMessage.addListener( (msg) => {
   if (!msg || !msg.type) {
     return;
   } else if (msg.type === 'expansion-complete') {
-    parseData();
+    const unrealizedCostBasis = parseData();
+    browser.storage.local.set( { unrealizedCostBasis: unrealizedCostBasis });
+  } else if (msg.type === 'refresh-unrealized') {
+    waitForElement('.vg-NavboxLabel', expandNavboxes);
   }
 });
 
 function parseData() {
   const tables = Array.from(document.querySelectorAll('td table.dataTable'));
-  const ret = tables.flatMap( (table, idx) => {
+  return tables.flatMap( (table, idx) => {
     const ticker = tickers[idx];
     const rows = Array.from(table.querySelectorAll('tr')).slice(1);
     return rows.flatMap ( (row) => {
@@ -25,7 +28,6 @@ function parseData() {
       };
     });
   });
-  console.log(ret);
 }
 
 function parseTickers() {
@@ -54,5 +56,3 @@ function expandNavboxes() {
   
   browser.runtime.sendMessage( { 'coordinates': coordinates });
 }
-
-waitForElement('.vg-NavboxLabel', expandNavboxes);
