@@ -7,11 +7,18 @@
 </head>
 <body>
 
-  <h1>$$$</h1>
+  <img style="display: block; margin-left: auto; margin-right: auto" src="../images/icon-128.png" />
   <div id="actions">
-    <button id="refreshUnrealized">Refresh unrealized cost basis</button>
+    <h3>Unrealized cost basis</h3>
+    <span>Last refreshed at: <span id="unrealizedLastRefresh"></span></span>
     <br />
-    <button id="refreshRealized">Refresh realized cost basis</button>
+    <button id="refreshUnrealized">Refresh</button>
+    <span id="unrealizedCheck" style="display: none">&#9989;</span>
+    <span id="unrealizedX" style="display: none">&#10060; check console for errors</span>
+    <br />
+    <br />
+    <h3>Realized cost basis</h3>
+    <button id="refreshRealized">Refresh</button>
     <br />
     <button id="clearState">Clear state</button>
     <br />

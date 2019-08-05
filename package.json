@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Self-service robo advisor on top of Vanguard accounts",
   "scripts": {
-    "dev": "webextension-toolbox dev -c config.js",
+    "dev": "webextension-toolbox dev",
     "build": "webextension-toolbox build"
   },
   "dependencies": {

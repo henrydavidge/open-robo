@@ -43,7 +43,6 @@
     }
   ],
   "permissions": [
-    "debugger",
     "storage",
     "tabs"
   ]

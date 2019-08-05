@@ -4,6 +4,20 @@ import dt from 'datatables.net';
 import 'datatables.net-dt/css/jquery.dataTables.css';
 $.DataTable = dt;
 
+browser.runtime.onMessage.addListener( (msg) => {
+  console.log('Received message', msg);
+  if (!msg || !msg.type) {
+    return;
+  } else if (msg.type === 'unrealized-success') {
+    $('#unrealizedCheck').fadeIn('slow');
+    $('#unrealizedCheck').fadeOut('slow');
+    showTimestamps();
+  } else if (msg.type === 'unrealized-error') {
+    $('#unrealizedX').fadeIn('slow');
+    $('#unrealizedX').fadeOut('slow');
+  }
+});
+
 document.getElementById("refreshUnrealized").onclick = (event) => {
   console.log('Got click, sending message');
   chrome.tabs.query( { active: true, currentWindow: true }, (tabs) => {
@@ -14,12 +28,28 @@ document.getElementById("refreshUnrealized").onclick = (event) => {
 document.getElementById("showTrades").onclick = (event) => {
   browser.storage.local.get(['unrealizedCostBasis', 'portfolio'])
     .then( (obj) => {
-      const df = new DataFrame(obj.unrealizedCostBasis);
+      const df = new DataFrame(obj.unrealizedCostBasis.data);
       const cash = parseFloat(document.getElementById('cash').value);
       const trades = getInvestments(df, cash, obj.portfolio);
       displayTrades(trades);
     });
 };
+
+document.getElementById('clearState').onclick = event => {
+  browser.storage.local.remove(['unrealizedCostBasis']);
+};
+
+showTimestamps();
+
+function showTimestamps() {
+  browser.storage.local.get(['unrealizedCostBasis'])
+    .then( obj => {
+      console.log(obj.unrealizedCostBasis.timestamp);
+      const dateStr = obj.unrealizedCostBasis.timestamp;
+      console.log(dateStr);
+      document.getElementById('unrealizedLastRefresh').textContent = dateStr;
+    });
+}
 
 function getInvestments(df, cash, portfolio) {
   const withCat = df.map(row => row.set('category', getCategory(row.get('ticker'), portfolio)));
