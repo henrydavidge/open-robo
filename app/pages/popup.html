@@ -8,23 +8,28 @@
 <body>
 
   <img style="display: block; margin-left: auto; margin-right: auto" src="../images/icon-128.png" />
-  <div id="actions">
-    <h3>Unrealized cost basis</h3>
-    <span>Last refreshed at: <span id="unrealizedLastRefresh"></span></span>
-    <br />
-    <button id="refreshUnrealized">Refresh</button>
-    <span id="unrealizedCheck" style="display: none">&#9989;</span>
-    <span id="unrealizedX" style="display: none">&#10060; check console for errors</span>
-    <br />
-    <br />
-    <h3>Realized cost basis</h3>
-    <button id="refreshRealized">Refresh</button>
-    <br />
-    <button id="clearState">Clear state</button>
-    <br />
-    <br />
+  <h3>Unrealized cost basis</h3>
+  <span>Last refreshed at: <span id="unrealizedLastRefresh"></span></span>
+  <br />
+  <button id="refreshUnrealized">Refresh</button>
+  <button id="toggleUnrealized">Show</button>
+  <table id="unrealizedTable"></table>
+  <span id="unrealizedCheck" style="display: none">&#9989;</span>
+  <span id="unrealizedX" style="display: none">&#10060; check console for errors</span>
+  <br />
+  <br />
+  <!--
+  <h3>Realized cost basis</h3>
+  <button id="refreshRealized">Refresh</button>
+  <br />
+  -->
+  <br />
+  <div id="investDiv" hidden>
     <input id="cash" type="text" placeholder="Cash to invest" />
-    <button id="showTrades">Show trades</button>
+    <button id="invest">Show trades</button>
+  </div>
+  <div id="clearTradesDiv" hidden>
+    <button id="clearTrades">Clear trades</button>
   </div>
   <table id="tradesTable"></table>
 
