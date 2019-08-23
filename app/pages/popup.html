@@ -18,11 +18,13 @@
   <span id="unrealizedX" style="display: none">&#10060; check console for errors</span>
   <br />
   <br />
-  <!--
   <h3>Realized cost basis</h3>
-  <button id="refreshRealized">Refresh</button>
+  <span>Last refreshed at: <span id="realizedLastRefresh"></span></span>
   <br />
-  -->
+  <button id="refreshRealized">Refresh</button>
+  <button id="toggleRealized">Show</button>
+  <table id="realizedTable"></table>
+  <br />
   <br />
   <div id="investDiv" hidden>
     <input id="cash" type="text" placeholder="Cash to invest" />
@@ -31,7 +33,10 @@
   <div id="clearTradesDiv" hidden>
     <button id="clearTrades">Clear trades</button>
   </div>
-  <table id="tradesTable"></table>
+  <div id="trades">
+    <table id="sellTable"></table>
+    <table id="buyTable"></table>
+  </div>
 
   <script src="../scripts/popup.js"></script>
 </body>
