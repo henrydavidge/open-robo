@@ -53,6 +53,10 @@ browser.runtime.onMessage.addListener( (msg) => {
 });
 
 function parseDollars(text) {
+  if (text === '\u2014') {
+    return 0;
+  }
+
   const replaced = text
     .replace('$', '')
     .replace(',', '')
@@ -71,8 +75,10 @@ function parseUnrealizedCostBasis(tickers, el) {
       return {
         ticker: ticker,
         date: Date.parse(cells[0].innerText),
+        shortTermGainOrLoss: parseDollars(cells[5].innerText),
+        longTermGainOrLoss: parseDollars(cells[6].innerText),
         gainOrLoss: parseDollars(cells[7].innerText),
-        marketValue: parseDollars(cells[4].innerText)
+        marketValue: parseDollars(cells[4].innerText),
       };
     });
   });

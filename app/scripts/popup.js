@@ -8,6 +8,8 @@ showTimestamps();
 maybeDisplayTrades();
 let unrealizedTable = null;
 let realizedTable = null;
+const BUY_ACTION = 'BUY';
+const SELL_ACTION = 'SELL';
 
 browser.runtime.onMessage.addListener( (msg) => {
   console.log('Received message', msg);
@@ -43,13 +45,8 @@ document.getElementById("invest").onclick = (event) => {
       const realizedDf = new DataFrame(obj.realizedCostBasis.data);
       const unrealizedDf = new DataFrame(obj.unrealizedCostBasis.data);
       const cash = parseFloat(document.getElementById('cash').value);
-      /**
-      const unrealizedMinusLosses = unrealizedDf
-        .diff(losses, ['ticker', 'date', 'marketValue', 'gainOrLoss']);
-      */
-      const trades = getInvestments(unrealizedDf, realizedDf, cash, obj.portfolio)
-        .map(row => row.set('hide', 'Hide'));
-      saveTrades(trades.toArray());
+      const trades = getInvestments(unrealizedDf, realizedDf, cash, obj.portfolio);
+      saveTrades(trades);
       displayTrades(trades);
     });
 };
@@ -72,7 +69,8 @@ document.getElementById("toggleUnrealized").onclick = event => {
             { title: "Ticker", data: "ticker" },
             { title: "Date", data: "date", render: d => new Date(d).toLocaleDateString("en-US") },
             { title: "Value", data: "marketValue" },
-            { title: "Gain/Loss", data: "gainOrLoss" }
+            { title: "Short Term Gain/Loss", data: "shortTermGainOrLoss" },
+            { title: "Long Term Gain/Loss", data: "longTermGainOrLoss" }
           ],
           searching: false,
           paging: false,
@@ -151,7 +149,7 @@ function getInvestments(unrealizedDf, realizedDf, cash, portfolio) {
   const losses = findLossesToHarvest(realizedDf, unrealizedDf);
 
   // For the rest of this algorithm, assume that we've already sold losses
-  const cashWithLosses = cash - losses.stat.sum('gainOrLoss');
+  const cashWithLosses = cash + losses.stat.sum('marketValue');
   const unrealizedMinusLosses = unrealizedDf
     .diff(losses, ['ticker', 'date', 'marketValue', 'gainOrLoss']);
   const realizedWithLosses = realizedDf
@@ -165,49 +163,61 @@ function getInvestments(unrealizedDf, realizedDf, cash, portfolio) {
     .map(cat => [cat]), ['category']).withColumn('marketValue', () => 0);
 
   // Annotate each holding by the category to which it belongs
-  const withCat = unrealizedDf.map(row => row.set('category', getCategory(row.get('ticker'), portfolio)))
+  const withCat = unrealizedMinusLosses
+    .map(row => row.set('category', getCategory(row.get('ticker'), portfolio)))
     .select('category', 'marketValue')
     .union(emptyCategoryDf);
 
   // Determine how much the allocation of each category should change
-  const floorFn = n => cash > 0 ? Math.max(n, 0) : Math.min(n, 0);
-  const totalValue = unrealizedDf.stat.sum('marketValue');
+  const floorFn = n => cashWithLosses > 0 ? Math.max(n, 0) : Math.min(n, 0);
+  const totalValue = unrealizedMinusLosses.stat.sum('marketValue');
   const deltaByCat = withCat.groupBy('category').aggregate(cat => cat.stat.sum('marketValue'), 'totalValue')
-    .map(row => row.set('desiredValue', portfolio[row.get('category')].allocation * (totalValue + cash)))
+    .map(row => row.set('desiredValue', portfolio[row.get('category')].allocation * (totalValue + cashWithLosses)))
     .map(row => row.set('desiredDelta', floorFn(row.get('desiredValue') - row.get('totalValue'))));
 
   // Normalize by the total amount of investment
   const totalDelta = deltaByCat.stat.sum('desiredDelta');
   const normalizedDeltaByCat = deltaByCat
-    .map(row => row.set('delta', row.get('desiredDelta') * (cash / totalDelta)))
+    .map(row => row.set('delta', row.get('desiredDelta') * (cashWithLosses / totalDelta)))
     .select('category', 'delta');
 
-  console.log('normalizedDelta', normalizedDeltaByCat.toArray());
   const categoriesToBuy = normalizedDeltaByCat.filter(r => r.get('delta') > 0);
+  console.log('categoriesToBuy', categoriesToBuy.toCollection());
   const categoriesToSell = normalizedDeltaByCat.filter(r => r.get('delta') < 0);
-  const recentLosses = realizedDf.filter(row => row.get('dateSold') > daysAgo(30));
+  const recentLosses = realizedWithLosses.filter(row => row.get('dateSold') > daysAgo(10));
 
-  return {
-    toBuy: chooseTickersToBuy(categoriesToBuy, portfolio, recentLosses),
-    toSell: chooseHoldingsToSell(losses, categoriesToSell, unrealizedMinusLosses, portfolio)
-  };
+  // Get dataframes with display schema (ticker, action, amount)
+  const lossesToSell = losses.distinct('ticker')
+    .withColumn('action', () => SELL_ACTION)
+    .withColumn('amount', () => 'LOSSES')
+    .select('ticker', 'action', 'amount');
+  const toBuy = chooseTickersToBuy(categoriesToBuy, portfolio, recentLosses)
+    .withColumn('action', () => BUY_ACTION)
+    .rename('delta', 'amount')
+    .select('ticker', 'action', 'amount');
+  const toSell = chooseHoldingsToSell(categoriesToSell, unrealizedMinusLosses, portfolio)
+    .withColumn('action', () => SELL_ACTION)
+    .rename('delta', 'amount')
+    .select('ticker', 'action', 'amount');
+      
+
+  return lossesToSell.union(toBuy).union(toSell).toArray();
 }
 
 function daysAgo(days) {
-  return Date.now() - 1000 * 60 * 60 * 24 * 30;
+  return Date.now() - 1000 * 60 * 60 * 24;
 }
 
 function removeRecentTransactions(realizedDf, unrealizedDf) {
-  console.log(daysAgo(30));
   const recentTransactions = 
-    unrealizedDf.filter(row => row.get('date') > daysAgo(30)).select('ticker')
-      .union(realizedDf.filter(row => row.get('dateAcquired') > daysAgo(30)).select('ticker'));
-  console.log('recentTransactions', recentTransactions.toArray());
+    unrealizedDf.filter(row => row.get('date') > daysAgo(1)).select('ticker')
+      .union(realizedDf.filter(row => row.get('dateAcquired') > daysAgo(1)).select('ticker'));
   return unrealizedDf.diff(recentTransactions, 'ticker');
 }
 
 function findLossesToHarvest(realizedDf, unrealizedDf) {
   const eligibleHoldings = removeRecentTransactions(realizedDf, unrealizedDf);
+    
   console.log('eligibleHoldings', eligibleHoldings);
   const tickersToHarvest = eligibleHoldings
     .filter(row => row.get('gainOrLoss') < -200)
@@ -253,9 +263,41 @@ function chooseTickersToBuy(categoriesToBuy, portfolio, recentLosses) {
  * 1) are long term capital gains
  * 2) are already being sold as part of the losses
  * 3) appear first in the list of tickers for the category
+ *
+ * Returns a list of shares to sell
  */
-function chooseHoldingsToSell(losses, unrealizedMinusLosses, categoriesToSell, portolio) {
+function chooseHoldingsToSell(categoriesToSell, unrealizedMinusLosses, portfolio) {
+  console.log('unrealizedMinusLosses', unrealizedMinusLosses.toCollection());
+  console.log('categoriesToSell', categoriesToSell.toCollection());
 
+  const withHoldingType = unrealizedMinusLosses
+    .withColumn('preference', r => {
+      if (r.get('shortTermGainOrLoss') !== 0) {
+        return 0;
+      } else {
+        return 1;
+      }
+    });
+
+  let tickersToSell = [];
+  categoriesToSell.map( row => {
+    const tickers = portfolio[row.get('category')].tickers;
+    const allForCategory = withHoldingType.filter(r => tickers.includes(r.get('ticker')));
+    const grouped = allForCategory.groupBy('ticker', 'preference')
+      .aggregate(g => g.stat.sum('marketValue'))
+      .sortBy('preference');
+    let totalToSell = -row.get('delta');
+    grouped.toCollection().forEach( ticker => {
+      const toSell = Math.min(ticker.aggregation, totalToSell);
+      totalToSell -= toSell;
+      if (toSell > 0) {
+        tickersToSell.push({ ticker: ticker.ticker, delta: toSell });
+      }
+    });
+  });
+  const output = new DataFrame(tickersToSell)
+  console.log('output', output.toCollection());
+  return output;
 }
 
 function maybeDisplayTrades() {
@@ -269,27 +311,36 @@ function maybeDisplayTrades() {
     });
 }
 
-function displayTrades(tradesDf) {
-  console.log("Making trades table");
+function displayTrades(trades) {
+  console.log("Making trades table", trades);
   document.getElementById("investDiv").hidden = true;
   document.getElementById("clearTradesDiv").hidden = false;
-  $('#tradesTable').dataTable( {
-    data: tradesDf.toArray(),
+  $('#buyTable').dataTable( {
+    data: trades,
     columns: [ 
       { title: 'Ticker' }, 
-      { title: '$' }, 
-      { title: 'Action', className: 'hide' }],
+      { title: 'Action' }, 
+      { title: 'Amount', render: formatAmount }, 
+      { title: '', className: 'hide', defaultContent: 'Hide' }],
     searching: false,
     paging: false,
     order: [[1, 'desc']]
   });
-  const table = $('#tradesTable').DataTable();
+  const table = $('#buyTable').DataTable();
 
   $('.hide').click( (event) => {
     const el = $(event.target).parents('tr');
     table.rows(el).remove().draw();
     saveTrades(table.rows().data().toArray());
   });
+}
+
+function formatAmount(amt) {
+  if (typeof amt !== 'number') {
+    return amt;
+  }
+
+  return '$' + amt.toFixed(2);
 }
 
 function clearTrades() {
