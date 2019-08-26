@@ -4,7 +4,8 @@
   "description": "Self-service robo advisor on top of Vanguard accounts",
   "scripts": {
     "dev": "webextension-toolbox dev",
-    "build": "webextension-toolbox build"
+    "build": "webextension-toolbox build",
+    "test": "mocha --require @babel/register app/scripts/test-*.js"
   },
   "dependencies": {
     "dataframe-js": "^1.4.1",
@@ -12,12 +13,14 @@
     "datatables.net-dt": "^1.10.19",
     "globalize": "^1.4.2",
     "jquery": "^3.4.1",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.15"
   },
   "devDependencies": {
+    "@babel/register": "^7.5.5",
     "css-loader": "^3.1.0",
     "file-loader": "^4.1.0",
     "image-webpack-loader": "^5.0.0",
+    "mocha": "^6.2.0",
     "style-loader": "^0.23.1",
     "webextension-toolbox": "latest"
   }

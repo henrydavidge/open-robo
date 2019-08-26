@@ -23,11 +23,11 @@ browser.runtime.onMessage.addListener( (msg) => {
           data: unrealizedCostBasis,
           timestamp: new Date().toLocaleString('en-US')
         }});
-        browser.runtime.sendMessage({ type: 'unrealized-success' });
+        browser.runtime.sendMessage({ type: 'refresh-success', costBasisType: 'unrealized' });
         haveRefreshedUnrealized = true;
       });
     } catch(error) {
-      browser.runtime.sendMessage({ type: 'unrealized-error', msg: error});
+      browser.runtime.sendMessage({ type: 'refresh-error', costBasisType: 'unrealized', msg: error});
       console.error(error);
     }
   } else if (msg.type === 'refresh-realized') {
@@ -42,11 +42,11 @@ browser.runtime.onMessage.addListener( (msg) => {
           data: realizedCostBasis,
           timestamp: new Date().toLocaleString('en-US')
         }});
-        browser.runtime.sendMessage({ type: 'realized-success' });
+        browser.runtime.sendMessage({ type: 'refresh-success', costBasisType: 'realized' });
         haveRefreshedRealized = true;
       });
     } catch(error) {
-      browser.runtime.sendMessage({ type: 'realized-error', msg: error});
+      browser.runtime.sendMessage({ type: 'refresh-error', costBasisType: 'realized', msg: error});
       console.error(error);
     }
   }

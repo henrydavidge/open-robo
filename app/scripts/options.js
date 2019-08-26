@@ -2,19 +2,25 @@ import jQuery from 'jquery';
 window.$ = jQuery;
 
 $('#save').click( () => {
-  console.log($('#avkey').val());
   browser.storage.local.set({
     portfolio: JSON.parse($('#portfolio').val()),
-    avkey: $('#avkey').val(),
-    minloss: $('#minloss').val(),
+    minLossToHarvest: $('#minloss').val(),
   })
 });
 
 $(document).ready( () => {
-  browser.storage.local.get(['portfolio', 'avkey', 'minloss'])
+  browser.storage.local.get(['portfolio', 'minLossToHarvest'])
     .then( (contents) => {
-      $('#portfolio').val(JSON.stringify(contents.portfolio, null, 2));
-      $('#avkey').val(contents.avkey);
-      $('#minloss').val(contents.minloss);
+      const sortedCategories = Object.keys(contents.portfolio)
+        .sort( (k1, k2) => {
+          if (contents.portfolio[k1].allocation <= contents.portfolio[k2].allocation) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }).reverse();
+      const elementKeys = ['allocation', 'tickers'];
+      $('#portfolio').val(JSON.stringify(contents.portfolio, sortedCategories.concat(elementKeys), 2));
+      $('#minloss').val(contents.minLossToHarvest);
     });
 });
