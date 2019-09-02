@@ -10,7 +10,9 @@ maybeDisplayTrades();
 let unrealizedTable = null;
 let realizedTable = null;
 
-browser.runtime.onMessage.addListener( (msg) => {
+browser.runtime.onMessage.addListener(handleMessage);
+
+function handleMessage(msg) {
   console.log('Received message', msg);
   if (!msg || !msg.type) {
     return;
@@ -19,20 +21,37 @@ browser.runtime.onMessage.addListener( (msg) => {
     $(`#${msg.costBasisType}Check`).fadeOut('slow');
     showTimestamps();
   } else if (msg.type === 'refresh-error') {
-    $(`#${msg.costBasisType}X`).fadeIn('slow');
-    $(`#${msg.costBasisType}X`).fadeOut('slow');
+    const el = $(`#${msg.costBasisType}X`);
+    el.find(".msg").text(msg.msg);
+    el.fadeIn('slow');
+    el.delay(5000).fadeOut('slow');
   }
-});
+}
 
 document.getElementById('refreshUnrealized').onclick = (event) => {
   browser.tabs.query( { active: true, currentWindow: true }).then( tabs => {
     browser.tabs.sendMessage(tabs[0].id, { type: 'refresh-unrealized' })
+      .catch( err => {
+        handleMessage({ 
+          type: 'refresh-error', 
+          costBasisType: 'unrealized', 
+          msg: 'Could not communicate with content script. Are you on personal.vanguard.com?'
+        });
+      });
   });
 };
 
 document.getElementById('refreshRealized').onclick = (event) => {
   browser.tabs.query( { active: true, currentWindow: true }).then( tabs => {
     browser.tabs.sendMessage(tabs[0].id, { type: 'refresh-realized' })
+      .catch( err => {
+        console.log('In catch');
+        handleMessage({ 
+          type: 'refresh-error', 
+          costBasisType: 'realized', 
+          msg: 'Could not communicate with content script. Are you on personal.vanguard.com?'
+        });
+      });
   });
 };
 

@@ -16,6 +16,7 @@ browser.runtime.onMessage.addListener( (msg) => {
       if (haveRefreshedUnrealized) {
         throw 'Can only refresh cost basis once between page refreshes';
       }
+      checkForCostBasisHeader('unrealized');
       const tickers = parseTickers(true);
       fetchUnrealizedCostBasis().then(el => {
         const unrealizedCostBasis = parseUnrealizedCostBasis(tickers, el);
@@ -35,6 +36,7 @@ browser.runtime.onMessage.addListener( (msg) => {
       if (haveRefreshedRealized) {
         throw 'Can only refresh cost basis once between page refreshes';
       }
+      checkForCostBasisHeader('realized');
       const tickers = parseTickers(false);
       fetchRealizedCostBasis().then(el => {
         const realizedCostBasis = parseRealizedCostBasis(tickers, el);
@@ -63,6 +65,17 @@ function parseDollars(text) {
     .replace(' ', '')
     .replace('\u2013', '-');
   return Number.parseFloat(replaced);
+}
+
+function checkForCostBasisHeader(costBasisType) {
+  const el = document.querySelector('div.tabbox li.current span');
+  if (!el) {
+    throw 'Could not find cost basis tabs. Are you on the Vanguard cost basis page?';
+  }
+  if (!el.textContent.trim().toLowerCase().startsWith(costBasisType)) {
+    throw `The navigation tab for ${costBasisType} cost basis is not selected. ` +
+      `Are you looking at the correct cost basis?`;
+  }
 }
 
 function parseUnrealizedCostBasis(tickers, el) { 
