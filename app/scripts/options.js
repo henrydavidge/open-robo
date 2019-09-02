@@ -5,7 +5,7 @@ $('#save').click( () => {
   browser.storage.local.set({
     portfolio: JSON.parse($('#portfolio').val()),
     minLossToHarvest: $('#minloss').val(),
-  })
+  }).then(() => window.close());
 });
 
 $(document).ready( () => {

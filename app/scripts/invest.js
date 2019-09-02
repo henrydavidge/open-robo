@@ -27,7 +27,8 @@ const REALIZED_COLS =
 export function getInvestments(unrealizedDf, realizedDf, cash, portfolio, minLossToHarvest) {
   Private.checkSchema(unrealizedDf, UNREALIZED_COLS);
   Private.checkSchema(realizedDf, REALIZED_COLS);
-  const losses = Private.findLossesToHarvest(realizedDf, unrealizedDf, minLossToHarvest);
+  const losses = 
+    Private.findLossesToHarvest(realizedDf, unrealizedDf, minLossToHarvest, TAX_LOSS_WINDOW_DAYS);
 
   // For the rest of this algorithm, assume that we've already sold losses
   const cashWithLosses = cash + losses.stat.sum('marketValue');
@@ -64,14 +65,13 @@ export function getInvestments(unrealizedDf, realizedDf, cash, portfolio, minLos
 
   const categoriesToBuy = normalizedDeltaByCat.filter(r => r.get('delta') > 0);
   const categoriesToSell = normalizedDeltaByCat.filter(r => r.get('delta') < 0);
-  const recentLosses = realizedWithLosses.filter(row => row.get('dateSold') > Private.daysAgo(TAX_LOSS_WINDOW_DAYS));
 
   // Get dataframes with display schema (ticker, action, amount)
   const lossesToSell = losses.distinct('ticker')
     .withColumn('action', () => SELL_ACTION)
     .withColumn('amount', () => 'LOSSES')
     .select('ticker', 'action', 'amount');
-  const toBuy = Private.chooseTickersToBuy(categoriesToBuy, portfolio, recentLosses)
+  const toBuy = Private.chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf)
     .withColumn('action', () => BUY_ACTION)
     .rename('delta', 'amount')
     .select('ticker', 'action', 'amount');
@@ -94,12 +94,12 @@ export class Private {
    * Filters out current holdings (as defined by `unrealizedDf`) that are not eligible for tax loss
    * harvesting because their ticker has been purchased within the tax loss harvesting window.
    */
-  static removeIneligibleHoldings(realizedDf, unrealizedDf) {
+  static removeIneligibleHoldings(realizedDf, unrealizedDf, activityWindow) {
     this.checkSchema(realizedDf, ['ticker', 'dateAcquired']);
     this.checkSchema(unrealizedDf, ['ticker', 'date']);
     const recentTransactions = 
-      unrealizedDf.filter(row => row.get('date') > this.daysAgo(TAX_LOSS_WINDOW_DAYS)).select('ticker')
-      .union(realizedDf.filter(row => row.get('dateAcquired') > this.daysAgo(TAX_LOSS_WINDOW_DAYS)).select('ticker'));
+      unrealizedDf.filter(row => row.get('date') > this.daysAgo(activityWindow)).select('ticker')
+      .union(realizedDf.filter(row => row.get('dateAcquired') > this.daysAgo(activityWindow)).select('ticker'));
     return unrealizedDf.diff(recentTransactions, 'ticker');
   }
 
@@ -112,16 +112,12 @@ export class Private {
    *
    * All holdings for selected tickers are returned.
    */
-  static findLossesToHarvest(realizedDf, unrealizedDf, minLossToHarvest) {
+  static findLossesToHarvest(realizedDf, unrealizedDf, minLossToHarvest, activityWindow) {
     this.checkSchema(realizedDf, ['ticker', 'dateAcquired']);
     this.checkSchema(unrealizedDf, ['ticker', 'date', 'gainOrLoss']);
-    const eligibleHoldings = this.removeIneligibleHoldings(realizedDf, unrealizedDf);
+    const eligibleHoldings = this.removeIneligibleHoldings(realizedDf, unrealizedDf, activityWindow);
 
-    const tickersToHarvest = eligibleHoldings
-      .withColumn('loss', r => Math.min(r.get('gainOrLoss'), 0))
-      .groupBy('ticker')
-      .aggregate(g => g.stat.sum('loss'))
-      .rename('aggregation', 'totalLoss')
+    const tickersToHarvest = this.addTotalLoss(eligibleHoldings)
       .filter(r => r.get('totalLoss') <= -minLossToHarvest);
 
     const lossesToHarvest = eligibleHoldings.filter(row => row.get('gainOrLoss') < 0)
@@ -129,6 +125,15 @@ export class Private {
       .filter(r => r.get('totalLoss'))
       .drop('totalLoss');
     return lossesToHarvest;
+  }
+
+  static addTotalLoss(df) {
+    this.checkSchema(df, ['ticker', 'gainOrLoss']);
+    return df
+      .withColumn('loss', r => Math.min(r.get('gainOrLoss'), 0))
+      .groupBy('ticker')
+      .aggregate(g => g.stat.sum('loss'))
+      .rename('aggregation', 'totalLoss');
   }
 
   static getCategory(ticker, portfolio) {
@@ -144,20 +149,32 @@ export class Private {
   /**
    * Choose the ticker to buy for each category. For each category, choose the ticker appearing first
    * in the portfolio's list of tickers that has not been sold for a loss in the last 30 days (to
-   * avoid the wash sale rule).
-   *
-   * TODO(hhd): We should be smarter and choose holdings that were bought most recently
+   * avoid the wash sale rule). Tickers that are currently held at a loss but not yet eligible for
+   * tax lost harvesting are also avoided.
    */
-  static chooseTickersToBuy(categoriesToBuy, portfolio, recentLosses) {
+  static chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf) {
     this.checkSchema(categoriesToBuy, ['category', 'delta']);
-    this.checkSchema(recentLosses, ['ticker']);
+    this.checkSchema(realizedDf, REALIZED_COLS);
+    const recentLosses = this.addTotalLoss(realizedDf
+      .filter(r => r.get('dateSold') > this.daysAgo(TAX_LOSS_WINDOW_DAYS)))
+      .select('ticker', 'totalLoss')
+      .withColumn('priority', () => 0);
+    const potentialLosses = this.addTotalLoss(unrealizedDf)
+      .select('ticker', 'totalLoss')
+      .withColumn('priority', () => 1);
+    const allLosses = recentLosses.union(potentialLosses)
+      .filter(r => r.get('totalLoss') < 0)
+      .sortBy(['priority', 'totalLoss'], true);
     const tickersToBuy = categoriesToBuy.map( row => {
       const category = row.get('category');
-      const firstEligibleTicker = portfolio[category].tickers
-        .find(el => !recentLosses.find(row => row.get('ticker') === el))
+      const tickers = portfolio[category].tickers;
+      const lossesForCategory = allLosses.filter(r => tickers.includes(r.get('ticker')));
+      const firstLosslessTicker = tickers
+        .find(el => !allLosses.find(row => row.get('ticker') === el))
 
       // If there's no eligible ticker, just buy the first one
-      const ticker = firstEligibleTicker ? firstEligibleTicker : portfolio[category].tickers[0];
+      const ticker = 
+        firstLosslessTicker ? firstLosslessTicker : lossesForCategory.toArray('ticker')[0];
       return row.set('ticker', ticker);
     }).select('ticker', 'delta');
     return tickersToBuy;

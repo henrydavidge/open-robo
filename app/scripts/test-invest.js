@@ -22,7 +22,7 @@ describe('removeIneligibleHoldings', () => {
     const realized = new DataFrame([ 
       { dateAcquired: Date.now(), ticker: 'A' },
     ]);
-    assert(Private.removeIneligibleHoldings(realized, unrealized).count() === 0);
+    assert(Private.removeIneligibleHoldings(realized, unrealized, 31).count() === 0);
   });
 
   it('keeps tickers not acquired recently', () => {
@@ -33,7 +33,7 @@ describe('removeIneligibleHoldings', () => {
       { dateAcquired: Private.daysAgo(32), ticker: 'A' }
     ]);
     assertDfsEqual(unrealized, 
-      Private.removeIneligibleHoldings(realized, unrealized));
+      Private.removeIneligibleHoldings(realized, unrealized, 31));
   });
 });
 
@@ -43,7 +43,7 @@ describe('findLossesToHarvest', () => {
       { date: Private.daysAgo(32), ticker: 'A', gainOrLoss: -1 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0).count(), 1);
+    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0, 31).count(), 1);
   });
 
   it('ignores profits', () => {
@@ -51,15 +51,15 @@ describe('findLossesToHarvest', () => {
       { date: Private.daysAgo(32), ticker: 'A', gainOrLoss: 1 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0).count(), 0);
+    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0, 31).count(), 0);
   });
 
   it('filters recent buys', () => {
     const unrealized = new DataFrame([
-      { date: Private.daysAgo(1), ticker: 'A', gainOrLoss: -1 }
+      { date: Private.daysAgo(30), ticker: 'A', gainOrLoss: -1 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0).count(), 0);
+    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0, 31).count(), 0);
   });
 
   it('respects min loss', () => {
@@ -67,8 +67,8 @@ describe('findLossesToHarvest', () => {
       { date: Private.daysAgo(32), ticker: 'A', gainOrLoss: -10 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0).count(), 1);
-    assert.equal(Private.findLossesToHarvest(realized, unrealized, 20).count(), 0);
+    assert.equal(Private.findLossesToHarvest(realized, unrealized, 0, 31).count(), 1);
+    assert.equal(Private.findLossesToHarvest(realized, unrealized, 20, 31).count(), 0);
   });
 
   it('sums losses across holdings', () => {
@@ -77,7 +77,7 @@ describe('findLossesToHarvest', () => {
       { date: Private.daysAgo(32), ticker: 'A', gainOrLoss: -5.01 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assertDfsEqual(Private.findLossesToHarvest(realized, unrealized, 10), unrealized);
+    assertDfsEqual(Private.findLossesToHarvest(realized, unrealized, 10,31), unrealized);
   });
 
   it('only returns losses', () => {
@@ -89,6 +89,6 @@ describe('findLossesToHarvest', () => {
       { date: Private.daysAgo(32), ticker: 'A', gainOrLoss: -5 }
     ]);
     const realized = new DataFrame([], ['ticker', 'dateAcquired']);
-    assertDfsEqual(Private.findLossesToHarvest(realized, unrealized, 0), expected);
+    assertDfsEqual(Private.findLossesToHarvest(realized, unrealized, 0, 31), expected);
   });
 });
