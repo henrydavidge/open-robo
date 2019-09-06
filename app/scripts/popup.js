@@ -28,6 +28,10 @@ function handleMessage(msg) {
   }
 }
 
+document.getElementById('settings').onclick = () => {
+  browser.runtime.openOptionsPage();
+};
+
 document.getElementById('refreshUnrealized').onclick = (event) => {
   browser.tabs.query( { active: true, currentWindow: true }).then( tabs => {
     browser.tabs.sendMessage(tabs[0].id, { type: 'refresh-unrealized' })
