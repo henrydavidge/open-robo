@@ -71,7 +71,7 @@ export function getInvestments(unrealizedDf, realizedDf, cash, portfolio, minLos
     .withColumn('action', () => SELL_ACTION)
     .withColumn('amount', () => 'LOSSES')
     .select('ticker', 'action', 'amount');
-  const toBuy = Private.chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf)
+  const toBuy = Private.chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf, minLossToHarvest)
     .withColumn('action', () => BUY_ACTION)
     .rename('delta', 'amount')
     .select('ticker', 'action', 'amount');
@@ -127,7 +127,7 @@ export class Private {
     return lossesToHarvest;
   }
 
-  static addTotalLoss(df) {
+  static addTotalLoss(df, threshold) {
     this.checkSchema(df, ['ticker', 'gainOrLoss']);
     return df
       .withColumn('loss', r => Math.min(r.get('gainOrLoss'), 0))
@@ -152,7 +152,7 @@ export class Private {
    * avoid the wash sale rule). Tickers that are currently held at a loss but not yet eligible for
    * tax lost harvesting are also avoided.
    */
-  static chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf) {
+  static chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf, minLossToHarvest) {
     this.checkSchema(categoriesToBuy, ['category', 'delta']);
     this.checkSchema(realizedDf, REALIZED_COLS);
     const recentLosses = this.addTotalLoss(realizedDf
@@ -160,6 +160,7 @@ export class Private {
       .select('ticker', 'totalLoss')
       .withColumn('priority', () => 0);
     const potentialLosses = this.addTotalLoss(unrealizedDf)
+      .map(r => r.get('totalLoss') <= -minLossToHarvest ? r : r.set('totalLoss', 0))
       .select('ticker', 'totalLoss')
       .withColumn('priority', () => 1);
     const allLosses = recentLosses.union(potentialLosses)
