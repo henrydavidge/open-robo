@@ -1,0 +1,34 @@
+{
+  "us-broad": {
+    "allocation": 0.34,
+    "tickers": ["VTI", "SCHB", "ITOT"]
+  },
+  "intl-developed-large-cap": {
+    "allocation": 0.24,
+    "tickers": ["VEA", "SCHF", "IEFA"]
+  },
+  "intl-emerging-markets": {
+    "allocation": 0.14,
+    "tickers": ["VWO", "IEMG", "SCHE"]
+  },
+  "us-large-cap-value": {
+    "allocation": 0.08,
+    "tickers": ["VTV", "SCHV", "SPYV"]
+  },
+  "us-mid-cap": {
+    "allocation": 0.06,
+    "tickers": ["VO", "SCHM"]
+  },
+  "us-small-cap": {
+    "allocation": 0.06,
+    "tickers": ["VB", "SCHA"]
+  },
+  "muni-bond": {
+    "allocation": 0.05,
+    "tickers": ["MUB", "TFI"]
+  },
+  "intl-bond": {
+    "allocation": 0.03,
+    "tickers": ["BNDX"]
+  }
+}
