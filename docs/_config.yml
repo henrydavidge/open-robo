@@ -1,4 +1,5 @@
 theme: "just-the-docs"
+remote_theme: pmarsceill/just-the-docs
 title: "Open Robo"
 description: A free robo advisor for all
 heading_anchors: true
