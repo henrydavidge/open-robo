@@ -13,6 +13,7 @@ A free robo-advisor in your browser
 {: .fs-6 .fw-300 }
 
 [Install for Chrome](https://chrome.google.com/webstore/detail/open-robo/hpikenahheicmjdkhakibjbenodblapf?authuser=1){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Code](https://github.com/henrydavidge/open-robo){: .btn .fs-5 .mb-4 .mb-md-0 .mr-2 }
 
 ---
 
