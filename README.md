@@ -5,6 +5,8 @@ Open Robo is a totally free robo advisor that runs in your browser.
 [Install for
 Chrome](https://chrome.google.com/webstore/detail/open-robo/hpikenahheicmjdkhakibjbenodblapf)
 
+[![CircleCI](https://circleci.com/gh/henrydavidge/open-robo.svg?style=svg)](https://circleci.com/gh/henrydavidge/open-robo)
+
 ## Contributing
 
 Contributions are welcome and appreciated. Please [create an
