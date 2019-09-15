@@ -3,3 +3,5 @@ title: "Open Robo"
 description: A free robo advisor for all
 heading_anchors: true
 url: "https://www.openrobo.app"
+plugins:
+  - "jekyll-remote-theme"

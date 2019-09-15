@@ -23,5 +23,5 @@ you choose a portfolio and automatically invest new funds. However, these servic
 fees or force you to use their own, often expensive, index funds.
 
 We believe that the value provided by robo-advisors does not warrant these costs. That's where Open
-Robo comes in. It runs in your browser on top of widely respected and extremely
+Robo comes in. It runs in your browser on top of widely respected and extremely cheap
 [Vanguard](https://investor.vanguard.com/home/) investment platform. You don't pay any fees, ever.
