@@ -24,7 +24,7 @@ Covenant](blah) code of conduct.
     npm run dev edge
 
 ## Run tests
-    npm run test
+    npm test
 
 ## Build
 
