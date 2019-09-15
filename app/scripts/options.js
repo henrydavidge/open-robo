@@ -21,6 +21,6 @@ $(document).ready( () => {
         }).reverse();
       const elementKeys = ['allocation', 'tickers'];
       $('#portfolio').val(JSON.stringify(contents.portfolio, sortedCategories.concat(elementKeys), 2));
-      $('#minloss').val(contents.minLossToHarvest);
+      $('#minloss').val(contents.minLossToHarvest ? contents.minLossToHarvest : 200);
     });
 });
