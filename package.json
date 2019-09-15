@@ -1,7 +1,7 @@
 {
   "name": "open-robo",
-  "version": "0.0.2",
-  "description": "Self-service robo advisor on top of Vanguard accounts",
+  "version": "0.1.1",
+  "description": "A free, self-service robo advisor on top of Vanguard accounts",
   "scripts": {
     "dev": "webextension-toolbox dev",
     "build": "webextension-toolbox build",
