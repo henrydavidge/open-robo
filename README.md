@@ -1,6 +1,6 @@
 # Open Robo
 
-Open Robo is a totally free robo advisor that runs in your browser.
+Open Robo is a totally free robo advisor that runs in your browser on top of the Vanguard trading platform.
 
 [Install for
 Chrome](https://chrome.google.com/webstore/detail/open-robo/hpikenahheicmjdkhakibjbenodblapf)
@@ -11,8 +11,8 @@ Chrome](https://chrome.google.com/webstore/detail/open-robo/hpikenahheicmjdkhaki
 
 Contributions are welcome and appreciated. Please [create an
 issue](https://github.com/henrydavidge/open-robo/issues/new) to describe the problem you want to
-address before opening a pull request. Contributors expected to adhere to the [Contributor
-Covenant](blah) code of conduct.
+address before opening a pull request. Contributors are expected to adhere to the [Contributor
+Covenant](https://www.contributor-covenant.org/) code of conduct.
 
 ## Install
 
