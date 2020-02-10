@@ -225,3 +225,80 @@ class VanguardFetcher {
   }
 }
 
+class SchwabFetcher {
+  getUnrealizedCostBasis() {
+    const url = "https://client.schwab.com/api/PositionV2/PositionsDataV2"
+    const positionData = fetch(url, 
+      {
+        "credentials":"include",
+        "headers": {
+          "accept":"application/json, text/javascript, */*; q=0.01",
+          "accept-language":"en-US,en;q=0.9",
+          "cache-control":"no-cache",
+          "content-type":"application/json; charset=utf-8",
+          "pragma":"no-cache",
+          "sec-fetch-mode":"cors",
+          "sec-fetch-site":"same-origin",
+          "x-requested-with":"XMLHttpRequest"
+        },
+        "referrer":"https://client.schwab.com/Areas/Accounts/Positions",
+        "referrerPolicy":"no-referrer-when-downgrade",
+        "body":null,
+        "method":"GET",
+        "mode":"cors"
+      });
+    const positions = positionData.then(r => r.json())
+      .then(d => {
+        const etfs = d.Accounts[0].SecurityGroupings.find(el => el.GroupName === 'ETF');
+        if (!etfs) {
+          return [];
+        }
+        return etfs.Positions;
+      });
+    const costBasis = positions.then(ps => {
+      const requests = ps.map(p => {
+        const baseUrl = "https://client.schwab.com/api/Cost/CostData";
+        const queryString = `?itemIssueId=${p.ItemIssueId}&accountindex=0&quantity=${p.Quantity}&isviewonly=false`;
+        return fetch(baseUrl + queryString,
+          {
+            "credentials":"include",
+            "headers": {
+              "accept":"application/json, text/javascript, */*; q=0.01",
+              "accept-language":"en-US,en;q=0.9",
+              "cache-control":"no-cache",
+              "pragma":"no-cache",
+              "sec-fetch-mode":"cors",
+              "sec-fetch-site":"same-origin",
+              "x-requested-with":"XMLHttpRequest"
+            },
+            "referrer":"https://client.schwab.com/Areas/Accounts/Positions",
+            "referrerPolicy":"no-referrer-when-downgrade",
+            "body":null,
+            "method":"GET",
+            "mode":"cors"
+          }).then(r => r.json()).then(d => d.Lots.map(lot => {
+            const marketValue = p.Price * lot.Quantity;
+            const originalValue = lot.OriginalCost;
+            const value =  {
+              ticker: p.QuoteSymbol,
+              date: lot.LotDate.split(' ')[0],
+              marketValue: p.Price * lot.Quantity,
+              shortTermGainOrLoss: lot.HoldingTerm === 'S' ? marketValue - originalValue : 0,
+              longTermGainOrLoss: lot.HoldingTerm === 'L' ? marketValue - originalValue : 0,
+              gainOrLoss: marketValue - originalValue
+            };
+            console.log(value);
+            return value;
+          }));
+      });
+      return Promise.all(requests).then(r => r.flat());
+    })
+    console.log(costBasis);
+    return costBasis;
+  }
+
+  getRealizedCostBasis() {
+    return [];
+  }
+}
+
