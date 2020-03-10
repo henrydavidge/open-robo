@@ -247,18 +247,20 @@ class SchwabFetcher {
         "method":"GET",
         "mode":"cors"
       });
-    const positions = positionData.then(r => r.json())
+    const baseData = positionData.then(r => r.json())
       .then(d => {
+        const accountIdx = d.Accounts[0].AccountIndex;
         const etfs = d.Accounts[0].SecurityGroupings.find(el => el.GroupName === 'ETF');
         if (!etfs) {
-          return [];
+          return { accountIdx, positions: [] };
         }
-        return etfs.Positions;
+        return { accountIdx, positions: etfs.Positions };
       });
-    const costBasis = positions.then(ps => {
+    const costBasis = baseData.then(d => {
+      const ps = d.positions;
       const requests = ps.map(p => {
         const baseUrl = "https://client.schwab.com/api/Cost/CostData";
-        const queryString = `?itemIssueId=${p.ItemIssueId}&accountindex=0&quantity=${p.Quantity}&isviewonly=false`;
+        const queryString = `?itemIssueId=${p.ItemIssueId}&accountindex=${d.accountIdx}&quantity=${p.Quantity}&isviewonly=false`;
         return fetch(baseUrl + queryString,
           {
             "credentials":"include",
