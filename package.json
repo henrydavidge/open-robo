@@ -10,7 +10,7 @@
   "dependencies": {
     "dataframe-js": "^1.4.3",
     "datatables.net-dt": "^1.10.19",
-    "jquery": "^3.4.1"
+    "jquery": "^3.5.0"
   },
   "devDependencies": {
     "@babel/register": "^7.5.5",
