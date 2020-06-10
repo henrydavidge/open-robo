@@ -63,8 +63,12 @@ document.getElementById('refreshRealized').onclick = (event) => {
 document.getElementById('invest').onclick = (event) => {
   browser.storage.local.get(['unrealizedCostBasis', 'realizedCostBasis', 'portfolio', 'minLossToHarvest'])
     .then( (obj) => {
-      const realizedDf = new DataFrame(obj.realizedCostBasis.data);
-      const unrealizedDf = new DataFrame(obj.unrealizedCostBasis.data);
+      const realizedDf = new DataFrame(
+        obj.realizedCostBasis.data,
+        ['ticker', 'dateAcquired', 'dateSold', 'gainOrLoss']);
+      const unrealizedDf = new DataFrame(
+        obj.unrealizedCostBasis.data,
+        ['ticker', 'date', 'marketValue', 'shortTermGainOrLoss', 'longTermGainOrLoss', 'gainOrLoss']);
       const cash = parseFloat(document.getElementById('cash').value);
       const trades = getInvestments(unrealizedDf, realizedDf, cash, obj.portfolio, obj.minLossToHarvest);
       saveTrades(trades);
