@@ -5,3 +5,4 @@ docs/.sass-cache
 packages/
 *.swp
 *.swo
+package-lock.json

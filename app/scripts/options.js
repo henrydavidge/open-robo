@@ -3,7 +3,6 @@ window.$ = jQuery;
 
 $('#save').click( () => {
   browser.storage.local.set({
-    provider: document.querySelector('input[name="provider"]:checked').value,
     portfolio: JSON.parse($('#portfolio').val()),
     minLossToHarvest: $('#minloss').val(),
     accountId: $('#account-id').val()
