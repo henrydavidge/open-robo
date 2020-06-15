@@ -212,7 +212,7 @@ function formatAmount(amt) {
   if (typeof amt !== 'number') {
     return amt;
   }
-  return amt.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  return '$' + amt.toFixed(2);
 }
 
 function clearTrades() {
