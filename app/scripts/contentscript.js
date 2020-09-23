@@ -1,4 +1,5 @@
 import jQuery from 'jquery';
+import { Private } from './invest.js';
 const $ = jQuery;
 
 let haveRefreshedUnrealized = false;
@@ -226,27 +227,34 @@ class VanguardFetcher {
 }
 
 class SchwabFetcher {
+
+  requestParams() {
+    return {
+      "credentials":"include",
+      "headers": {
+        "accept":"application/json, text/javascript, */*; q=0.01",
+        "accept-language":"en-US,en;q=0.9",
+        "cache-control":"no-cache",
+        "content-type":"application/json; charset=utf-8",
+        "pragma":"no-cache",
+        "sec-fetch-mode":"cors",
+        "sec-fetch-site":"same-origin",
+        "x-requested-with":"XMLHttpRequest"
+      },
+      "referrerPolicy":"no-referrer-when-downgrade",
+      "body":null,
+      "mode":"cors"
+    };
+  }
+
+  get(url, referrer) {
+    const params = { ...this.requestParams(), ...{ method: "GET", referrer: referrer } };
+    return fetch(url, params);
+  }
+
   getUnrealizedCostBasis() {
     const url = "https://client.schwab.com/api/PositionV2/PositionsDataV2"
-    const positionData = fetch(url, 
-      {
-        "credentials":"include",
-        "headers": {
-          "accept":"application/json, text/javascript, */*; q=0.01",
-          "accept-language":"en-US,en;q=0.9",
-          "cache-control":"no-cache",
-          "content-type":"application/json; charset=utf-8",
-          "pragma":"no-cache",
-          "sec-fetch-mode":"cors",
-          "sec-fetch-site":"same-origin",
-          "x-requested-with":"XMLHttpRequest"
-        },
-        "referrer":"https://client.schwab.com/Areas/Accounts/Positions",
-        "referrerPolicy":"no-referrer-when-downgrade",
-        "body":null,
-        "method":"GET",
-        "mode":"cors"
-      });
+    const positionData = this.get(url, "https://client.schwab.com/Areas/Accounts/Positions");
     const baseData = positionData.then(r => r.json())
       .then(d => {
         const accountIdx = d.Accounts[0].AccountIndex;
@@ -261,29 +269,13 @@ class SchwabFetcher {
       const requests = ps.map(p => {
         const baseUrl = "https://client.schwab.com/api/Cost/CostData";
         const queryString = `?itemIssueId=${p.ItemIssueId}&accountindex=${d.accountIdx}&quantity=${p.Quantity}&isviewonly=false`;
-        return fetch(baseUrl + queryString,
-          {
-            "credentials":"include",
-            "headers": {
-              "accept":"application/json, text/javascript, */*; q=0.01",
-              "accept-language":"en-US,en;q=0.9",
-              "cache-control":"no-cache",
-              "pragma":"no-cache",
-              "sec-fetch-mode":"cors",
-              "sec-fetch-site":"same-origin",
-              "x-requested-with":"XMLHttpRequest"
-            },
-            "referrer":"https://client.schwab.com/Areas/Accounts/Positions",
-            "referrerPolicy":"no-referrer-when-downgrade",
-            "body":null,
-            "method":"GET",
-            "mode":"cors"
-          }).then(r => r.json()).then(d => d.Lots.map(lot => {
+        return this.get(baseUrl + queryString, "https://client.schwab.com/Areas/Accounts/Positions")
+          .then(r => r.json()).then(d => d.Lots.map(lot => {
             const marketValue = p.Price * lot.Quantity;
             const originalValue = lot.OriginalCost;
-            const value =  {
+            const value = {
               ticker: p.QuoteSymbol,
-              date: lot.LotDate.split(' ')[0],
+              date: Date.parse(lot.LotDate.split(' ')[0]),
               marketValue: p.Price * lot.Quantity,
               shortTermGainOrLoss: lot.HoldingTerm === 'S' ? marketValue - originalValue : 0,
               longTermGainOrLoss: lot.HoldingTerm === 'L' ? marketValue - originalValue : 0,
@@ -295,12 +287,28 @@ class SchwabFetcher {
       });
       return Promise.all(requests).then(r => r.flat());
     })
-    console.log(costBasis);
     return costBasis;
   }
 
+  // TODO: Need to handle fetching more than the first page of results. If you trade once a month,
+  // though, the first page is fine.
   getRealizedCostBasis() {
-    return [];
+    const url = "https://client.schwab.com/api/history/brokerage/GetTransactions";
+
+    // Fetches all transactions in history
+    const requestHistory = this.get(url, "https://client.schwab.com/Apps/accounts/transactionhistory/");
+    return requestHistory.then(r => r.json())
+      .then(d => d.BrokerageHistoryOut.filter(ev => ev.Action === "Sell").map(ev => {
+        const value = {
+          ticker: ev.PresentationSymbol,
+          dateSold: ev.EffectiveDate,
+          dateAcquired: Private.daysAgo(31), // Hack! We don't know the time acquired, so assume it's outside the tax loss harvesting window
+          gainOrLoss: -1 // Hack! We don't know the gain or loss from the history, so we assume it's a $1 loss
+        }
+        console.log(value);
+        return value
+      }));
   }
+
 }
 
