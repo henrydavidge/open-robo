@@ -1,6 +1,6 @@
 {
   "name": "open-robo",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A free, self-service robo advisor on top of Vanguard accounts",
   "scripts": {
     "dev": "webextension-toolbox dev",
@@ -9,15 +9,15 @@
   },
   "dependencies": {
     "dataframe-js": "^1.4.3",
-    "datatables.net-dt": "^1.10.19",
+    "datatables.net-dt": "^1.10.22",
     "jquery": ">=3.5.0"
   },
   "devDependencies": {
-    "@babel/register": "^7.5.5",
-    "css-loader": "^3.2.0",
-    "file-loader": "^4.2.0",
-    "image-webpack-loader": "^5.0.0",
-    "mocha": "^6.2.0",
+    "@babel/register": "^7.11.5",
+    "css-loader": "^3.6.0",
+    "file-loader": "^4.3.0",
+    "image-webpack-loader": "^5.1.0",
+    "mocha": "^6.2.3",
     "style-loader": "^0.23.1",
     "webextension-toolbox": "latest"
   }
