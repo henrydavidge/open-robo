@@ -36,6 +36,7 @@ document.getElementById('refreshUnrealized').onclick = (event) => {
   browser.tabs.query( { active: true, currentWindow: true }).then( tabs => {
     browser.tabs.sendMessage(tabs[0].id, { type: 'refresh-unrealized' })
       .catch( err => {
+        console.log(err);
         handleMessage({ 
           type: 'refresh-error', 
           costBasisType: 'unrealized', 
@@ -62,8 +63,12 @@ document.getElementById('refreshRealized').onclick = (event) => {
 document.getElementById('invest').onclick = (event) => {
   browser.storage.local.get(['unrealizedCostBasis', 'realizedCostBasis', 'portfolio', 'minLossToHarvest'])
     .then( (obj) => {
-      const realizedDf = new DataFrame(obj.realizedCostBasis.data);
-      const unrealizedDf = new DataFrame(obj.unrealizedCostBasis.data);
+      const realizedDf = new DataFrame(
+        obj.realizedCostBasis.data,
+        ['ticker', 'dateAcquired', 'dateSold', 'gainOrLoss']);
+      const unrealizedDf = new DataFrame(
+        obj.unrealizedCostBasis.data,
+        ['ticker', 'date', 'marketValue', 'shortTermGainOrLoss', 'longTermGainOrLoss', 'gainOrLoss']);
       const cash = parseFloat(document.getElementById('cash').value);
       const trades = getInvestments(unrealizedDf, realizedDf, cash, obj.portfolio, obj.minLossToHarvest);
       saveTrades(trades);
@@ -207,7 +212,7 @@ function formatAmount(amt) {
   if (typeof amt !== 'number') {
     return amt;
   }
-  return amt.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  return '$' + amt.toFixed(2);
 }
 
 function clearTrades() {

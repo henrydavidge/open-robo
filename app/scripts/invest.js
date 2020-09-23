@@ -67,9 +67,9 @@ export function getInvestments(unrealizedDf, realizedDf, cash, portfolio, minLos
   const categoriesToSell = normalizedDeltaByCat.filter(r => r.get('delta') < 0);
 
   // Get dataframes with display schema (ticker, action, amount)
-  const lossesToSell = losses.distinct('ticker')
+  const lossesToSell = losses.groupBy('ticker').aggregate(group => group.stat.sum('marketValue')).rename('aggregation', 'total')
     .withColumn('action', () => SELL_ACTION)
-    .withColumn('amount', () => 'LOSSES')
+    .withColumn('amount', row => row.get('total'))
     .select('ticker', 'action', 'amount');
   const toBuy = Private.chooseTickersToBuy(categoriesToBuy, portfolio, unrealizedDf, realizedDf, minLossToHarvest)
     .withColumn('action', () => BUY_ACTION)
@@ -100,6 +100,7 @@ export class Private {
     const recentTransactions = 
       unrealizedDf.filter(row => row.get('date') > this.daysAgo(activityWindow)).select('ticker')
       .union(realizedDf.filter(row => row.get('dateAcquired') > this.daysAgo(activityWindow)).select('ticker'));
+    console.log('Found recent transactions', recentTransactions.toCollection());
     return unrealizedDf.diff(recentTransactions, 'ticker');
   }
 
