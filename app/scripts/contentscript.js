@@ -302,8 +302,12 @@ class SchwabFetcher {
         const value = {
           ticker: ev.PresentationSymbol,
           dateSold: ev.EffectiveDate,
-          dateAcquired: Private.daysAgo(31), // Hack! We don't know the time acquired, so assume it's outside the tax loss harvesting window
-          gainOrLoss: -1 // Hack! We don't know the gain or loss from the history, so we assume it's a $1 loss
+          // Hack! We don't know the time acquired, so assume it's outside the tax loss harvesting window.
+          // This is probably true since we usually only sell to harvest losses.
+          dateAcquired: Private.daysAgo(31),
+          // Hack! We don't know the gain or loss from the history, so we assume it's a $1 loss.
+          // This is probably true since we usually only sell to harvest losses.
+          gainOrLoss: -1
         }
         console.log(value);
         return value
