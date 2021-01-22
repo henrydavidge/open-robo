@@ -13,8 +13,7 @@ browser.runtime.onMessage.addListener( (msg) => {
     const unrealizedCostBasis = parseUnrealizedCostBasis();
     browser.storage.local.set( { unrealizedCostBasis: unrealizedCostBasis });
   } else if (msg.type === 'refresh-unrealized') {
-    makeDataFetcher()
-      .then(fetcher => fetcher.getUnrealizedCostBasis())
+    makeDataFetcher().getUnrealizedCostBasis()
       .then(unrealizedCostBasis => {
         browser.storage.local.set( { unrealizedCostBasis: {
           data: unrealizedCostBasis,
@@ -27,8 +26,7 @@ browser.runtime.onMessage.addListener( (msg) => {
         console.error(error);
       });
   } else if (msg.type === 'refresh-realized') {
-    makeDataFetcher()
-      .then(fetcher => fetcher.getRealizedCostBasis())
+    makeDataFetcher().getRealizedCostBasis()
       .then(realizedCostBasis => {
         browser.storage.local.set( { realizedCostBasis: {
           data: realizedCostBasis,
@@ -60,15 +58,11 @@ function parseDollars(text) {
  * Return a data fetch promise.
  */
 function makeDataFetcher() {
-  return browser.storage.local.get(['accountId'])
-    .then( (contents) => {
-      const accountId = contents.accountId;
-      if (window.location.href.includes('personal.vanguard.com')) {
-        return new VanguardFetcher();
-      } else if (window.location.href.includes('client.schwab.com')) {
-        return new SchwabFetcher(accountId);
-      }
-    });
+  if (window.location.href.includes('personal.vanguard.com')) {
+    return new VanguardFetcher();
+  } else if (window.location.href.includes('client.schwab.com')) {
+    return new SchwabFetcher();
+  }
 }
 
 class VanguardFetcher {
@@ -281,7 +275,6 @@ class SchwabFetcher {
               longTermGainOrLoss: lot.HoldingTerm === 'L' ? marketValue - originalValue : 0,
               gainOrLoss: marketValue - originalValue
             };
-            console.log(value);
             return value;
           }));
       });
@@ -309,7 +302,6 @@ class SchwabFetcher {
           // This is probably true since we usually only sell to harvest losses.
           gainOrLoss: -1
         }
-        console.log(value);
         return value
       }));
   }

@@ -71,3 +71,17 @@ category.
 To sell all shares with a potential loss, select the "SpecID" cost basis method from the ETF trading
 dialogue. You can then sort holdings by "Estimated total gain/loss" and quickly select all holdings
 with a negative value.
+
+## Using a Schwab account
+
+Open Robo also runs on Charles Schwab brokerage accounts. The basic mechanics are the same as for a
+Vanguard account, but you sync your portfolio data differently.
+
+To sync your unrealized gains, click on the "Refresh" button under the "Unrealized cost basis" heading in Open
+Robo while the "Positions > Market Value" tab is open for the Open Robo brokerage account.
+
+To sync your realized gains, click on the "Refresh" button under "Realized cost basis" while the
+"History" tab is open for the Open Robo brokerage account.
+
+When selling shares, you can use the "Tax Lot Optimizer" cost basis method to avoid manually
+selecting lots.
