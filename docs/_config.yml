@@ -2,6 +2,6 @@ remote_theme: pmarsceill/just-the-docs
 title: "Open Robo"
 description: A free robo advisor for all
 heading_anchors: true
-url: "https://henrydavidge.github.io/open-robo"
+url: "https://henrydavidge.github.io"
 plugins:
   - "jekyll-remote-theme"
