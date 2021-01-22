@@ -161,13 +161,13 @@ function destroyDataTable(selector) {
 function showTimestamps() {
   browser.storage.local.get(['unrealizedCostBasis'])
     .then( obj => {
-      const dateStr = obj.unrealizedCostBasis.timestamp;
+      const dateStr = obj.unrealizedCostBasis ? obj.unrealizedCostBasis.timestamp : 'Never';
       document.getElementById('unrealizedLastRefresh').textContent = dateStr;
     });
 
   browser.storage.local.get(['realizedCostBasis'])
     .then( obj => {
-      const dateStr = obj.realizedCostBasis.timestamp;
+      const dateStr = obj.realizedCostBasis ? obj.realizedCostBasis.timestamp : 'Never';
       document.getElementById('realizedLastRefresh').textContent = dateStr;
     });
 }
